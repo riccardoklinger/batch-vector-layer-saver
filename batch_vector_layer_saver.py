@@ -23,13 +23,18 @@
 """
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QAction, QFileDialog
+
+#get some qgis libs:
+from qgis.core import *
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .batch_vector_layer_saver_dialog import BatchVectorLayerSaverDialog
 import os.path
+import os
 
 
 class BatchVectorLayerSaver:
@@ -70,6 +75,8 @@ class BatchVectorLayerSaver:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'BatchVectorLayerSaver')
         self.toolbar.setObjectName(u'BatchVectorLayerSaver')
+        self.dlg.lineEdit.clear()
+        self.dlg.toolButton.clicked.connect(self.select_output_directory) 
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -181,15 +188,86 @@ class BatchVectorLayerSaver:
         # remove the toolbar
         del self.toolbar
 
-
+    def select_output_directory(self):
+        output_dir = QFileDialog.getExistingDirectory()
+        self.dlg.lineEdit.setText(output_dir)
     def run(self):
         """Run method that performs all the real work"""
         # show the dialog
         self.dlg.show()
+        layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
+        layer_list = []
+        # Append only Vector (type == 0) to the layer_list
+        for layer in layers:
+            print(layer)
+            if layer.type() ==0:
+                layer_list.append(layer.name())
+            else:
+                pass
+        # Add layer_list array to listWidget
+        self.dlg.listWidget.clear()
+        for layer in layers:
+            item = QtWidgets.QListWidgetItem()
+            item.setText(layer.name())
+            item.setData(QtCore.Qt.ToolTipRole, layer.id())
+            self.dlg.listWidget.addItem(item)
+            self.dlg.listWidget.setCurrentItem(item)
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
+            output_dir = self.dlg.lineEdit.text()
+            if not os.path.exists(output_dir):
+                self.iface.messageBar().pushMessage("No such directory", "Choose an existing directory to save the layers in.", 1, 5)
+            if os.path.exists(output_dir):
+                #self.listWidget.selectedItems()])
+                self.save_layers()
+
+    def save_layers(self):
+        print("we are in the save layer function!")        
+        if self.dlg.checkBox_shp.isChecked():
+            self.save_esri_shapefile()
+        else:
             pass
+        if self.dlg.checkBox_tab.isChecked():
+            self.save_mapinfo_file()
+        else:
+            pass
+        if self.dlg.checkBox_geojson.isChecked():
+            self.save_geojson()
+        else:
+            pass
+        if self.dlg.checkBox_kml.isChecked():
+            self.save_kml()
+        else:
+            pass
+        if self.dlg.checkBox_pgdump.isChecked():
+            self.save_pgdump()
+        else:
+            pass
+        if self.dlg.checkBox_gpkg.isChecked():
+            self.save_gpkg()
+        else:
+            pass
+        if self.dlg.checkBox_csv.isChecked():
+            self.save_csv()
+        else:
+            pass
+
+    def save_csv(self):
+        print("letsgo")
+        layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
+        output_dir = self.dlg.lineEdit.text() + "/CSV/"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        for item in self.dlg.listWidget.selectedItems():
+            for f in layers:
+                print("exporting " + item.toolTip())
+                if f.type() == 0 and f.id() == item.toolTip():
+                    writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".csv", "utf-8", f.crs(), "CSV", layerOptions=['GEOMETRY=AS_WKT'])
+                    if writer[0] == QgsVectorFileWriter.NoError:
+                        self.iface.messageBar().pushMessage("Layer Saved", f.name() + ".csv saved to " + output_dir, 0, 2)
+                    else:
+                        self.iface.messageBar().pushMessage("Error saving layer:", f.name() + ".csv to " + output_dir, 1, 2)
+                else:
+                    pass

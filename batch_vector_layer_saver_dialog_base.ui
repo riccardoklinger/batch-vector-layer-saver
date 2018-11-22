@@ -61,7 +61,7 @@
           <string>These layers will all be exported</string>
          </property>
          <property name="selectionMode">
-          <enum>QAbstractItemView::NoSelection</enum>
+          <enum>QAbstractItemView::MultiSelection</enum>
          </property>
          <property name="sortingEnabled">
           <bool>true</bool>
