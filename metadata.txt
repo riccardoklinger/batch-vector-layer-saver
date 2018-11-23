@@ -9,13 +9,13 @@
 [general]
 name=Batch Vector Layer Saver
 qgisMinimumVersion=3.0
-description=Saves multiple layers in definable formats in a batch mode. Adopted from  https://github.com/rjspiers/qgis-batch-save-layers for QGIS3.
+description=Saves multiple layers in different formats in a batch mode. 
 
 version=0.9
 author=Riccardo Klinger
 email=riccardo.klinger@gmail.com
 
-about=Saves multiple vector layers in the format of your choice.
+about=Saves multiple vector layers in the format of your choice in a customizable folder destination. Adopted from  https://github.com/rjspiers/qgis-batch-save-layers for QGIS3.
 
 tracker=https://github.com/riccardoklinger/batch-vector-layer-saver
 repository=https://github.com/riccardoklinger/batch-vector-layer-saver
