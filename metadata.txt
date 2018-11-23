@@ -17,7 +17,7 @@ email=riccardo.klinger@gmail.com
 
 about=Saves multiple vector layers in multiple formats of your choice at once in a customizable folder destination. Adopted from  https://github.com/rjspiers/qgis-batch-save-layers for QGIS3.
 
-tracker=https://github.com/riccardoklinger/batch-vector-layer-saver
+tracker=https://github.com/riccardoklinger/batch-vector-layer-saver/issues
 repository=https://github.com/riccardoklinger/batch-vector-layer-saver
 # End of mandatory metadata
 
