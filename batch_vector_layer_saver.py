@@ -226,48 +226,56 @@ class BatchVectorLayerSaver:
     def save_layers(self):
         print("we are in the save layer function!")        
         if self.dlg.checkBox_shp.isChecked():
-            self.save_esri_shapefile()
+            self.save_layer_format("Esri Shapefile")
         else:
             pass
         if self.dlg.checkBox_tab.isChecked():
-            self.save_mapinfo_file()
+            self.save_layer_format("MapInfo File")
         else:
             pass
         if self.dlg.checkBox_geojson.isChecked():
-            self.save_geojson()
-        else:
-            pass
-        if self.dlg.checkBox_kml.isChecked():
-            self.save_kml()
+            self.save_layer_format("GeoJSON")
         else:
             pass
         if self.dlg.checkBox_pgdump.isChecked():
-            self.save_pgdump()
+            self.save_layer_format("PGDump")
         else:
             pass
         if self.dlg.checkBox_gpkg.isChecked():
-            self.save_gpkg()
+            self.save_layer_format("GPKG")
         else:
             pass
         if self.dlg.checkBox_csv.isChecked():
-            self.save_csv()
+            self.save_layer_format("CSV")
         else:
             pass
 
-    def save_csv(self):
+    def save_layer_format(self, format):
         print("letsgo")
         layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
-        output_dir = self.dlg.lineEdit.text() + "/CSV/"
+        output_dir = self.dlg.lineEdit.text() + os.sep + format + os.sep
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+        #change some filetypes
         for item in self.dlg.listWidget.selectedItems():
             for f in layers:
                 print("exporting " + item.toolTip())
                 if f.type() == 0 and f.id() == item.toolTip():
-                    writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".csv", "utf-8", f.crs(), "CSV", layerOptions=['GEOMETRY=AS_WKT'])
+                    if format == "CSV":
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".csv", "utf-8", f.crs(), format , layerOptions=['GEOMETRY=AS_WKT'])
+                    if format == "Esri Shapefile":
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".shp", "utf-8", f.crs(), format)
+                    if format == "MapInfo File":
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".TAB", "utf-8", f.crs(), format)
+                    if format == "GeoJSON":
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".GeoJSON", "utf-8", f.crs(), format)
+                    if format == "PGDump":
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".sql", "utf-8", f.crs(), format)
+                    if format == "GPKG":
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".gpkg", "utf-8", f.crs(), format)
                     if writer[0] == QgsVectorFileWriter.NoError:
-                        self.iface.messageBar().pushMessage("Layer Saved", f.name() + ".csv saved to " + output_dir, 0, 2)
+                        self.iface.messageBar().pushMessage("Layer Saved", f.name() + " saved to " + output_dir + " as " + format, 0, 2)
                     else:
                         self.iface.messageBar().pushMessage("Error saving layer:", f.name() + ".csv to " + output_dir, 1, 2)
-                else:
-                    pass
+            else:
+                pass
