@@ -77,7 +77,7 @@ class BatchVectorLayerSaver:
         self.toolbar.setObjectName(u'BatchVectorLayerSaver')
         self.dlg.lineEdit.clear()
         self.dlg.toolButton.clicked.connect(self.select_output_directory) 
-
+        self.dlg.changeCRS.stateChanged.connect(self.triggerCRS) 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -191,11 +191,20 @@ class BatchVectorLayerSaver:
     def select_output_directory(self):
         output_dir = QFileDialog.getExistingDirectory()
         self.dlg.lineEdit.setText(output_dir)
+    def triggerCRS(self):
+        if self.dlg.changeCRS.isChecked() == True:
+            self.dlg.mQgsProjectionSelectionWidget.setEnabled(True)
+        else:
+            self.dlg.mQgsProjectionSelectionWidget.setEnabled(False)
     def run(self):
         """Run method that performs all the real work"""
         # show the dialog
+        
         self.dlg.show()
         layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
+        #set crs:
+        
+        self.dlg.mQgsProjectionSelectionWidget.setCrs(QgsProject.instance().crs())
         layer_list = []
         # Append only Vector (type == 0) to the layer_list
         for layer in layers:
@@ -207,11 +216,12 @@ class BatchVectorLayerSaver:
         # Add layer_list array to listWidget
         self.dlg.listWidget.clear()
         for layer in layers:
-            item = QtWidgets.QListWidgetItem()
-            item.setText(layer.name())
-            item.setData(QtCore.Qt.ToolTipRole, layer.id())
-            self.dlg.listWidget.addItem(item)
-            self.dlg.listWidget.setCurrentItem(item)
+            if layer.type() == 0:
+                item = QtWidgets.QListWidgetItem()
+                item.setText(layer.name())
+                item.setData(QtCore.Qt.ToolTipRole, layer.id())
+                self.dlg.listWidget.addItem(item)
+                self.dlg.listWidget.setCurrentItem(item)
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
@@ -222,6 +232,7 @@ class BatchVectorLayerSaver:
             if os.path.exists(output_dir):
                 #self.listWidget.selectedItems()])
                 self.save_layers()
+                
 
     def save_layers(self):
         print("we are in the save layer function!")        
@@ -256,23 +267,28 @@ class BatchVectorLayerSaver:
         output_dir = self.dlg.lineEdit.text() + os.sep + format + os.sep
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+
         #change some filetypes
         for item in self.dlg.listWidget.selectedItems():
             for f in layers:
                 print("exporting " + item.toolTip())
                 if f.type() == 0 and f.id() == item.toolTip():
+                    if self.dlg.changeCRS.isChecked() == True:
+                        crs = self.dlg.mQgsProjectionSelectionWidget.crs()
+                    else: 
+                        crs = f.crs()
                     if format == "CSV":
-                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".csv", "utf-8", f.crs(), format , layerOptions=['GEOMETRY=AS_WKT'])
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".csv", "utf-8", crs, format , layerOptions=['GEOMETRY=AS_WKT'])
                     if format == "Esri Shapefile":
-                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".shp", "utf-8", f.crs(), format)
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".shp", "utf-8", crs, format)
                     if format == "MapInfo File":
-                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".TAB", "utf-8", f.crs(), format)
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".TAB", "utf-8", crs, format)
                     if format == "GeoJSON":
-                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".GeoJSON", "utf-8", f.crs(), format)
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".GeoJSON", "utf-8", crs, format)
                     if format == "PGDump":
-                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".sql", "utf-8", f.crs(), format)
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".sql", "utf-8", crs, format)
                     if format == "GPKG":
-                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".gpkg", "utf-8", f.crs(), format)
+                        writer = QgsVectorFileWriter.writeAsVectorFormat( f, output_dir + f.name() + ".gpkg", "utf-8", crs, format)
                     if writer[0] == QgsVectorFileWriter.NoError:
                         self.iface.messageBar().pushMessage("Layer Saved", f.name() + " saved to " + output_dir + " as " + format, 0, 2)
                     else:
